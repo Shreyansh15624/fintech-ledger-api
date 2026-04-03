@@ -10,7 +10,7 @@ models.Base.metadata.create_all(bind=engine)
 # 2. The Engine: Initializing the FastAPI Application
 app = FastAPI(
     title="Zorvyn Finance API",
-    description="Backedn screening assessment for Zorvyn FinTech",
+    description="Backend screening assessment for Zorvyn FinTech",
     version="1.0.0",
 )
 

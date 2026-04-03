@@ -19,7 +19,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
     try:
         # 1. Decoding the VIP Pass using our Secret Key
-        payload = jwt.decoder(
+        payload = jwt.decode(
             token,
             jwt_handler.SECRET_KEY,
             algorithms=[jwt_handler.ALGORITHM],
@@ -33,7 +33,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     
     # 2. Verifying if the user actually exists within the database
-    user = db.query(models.User).filer(models.User.username == username).first()
+    user = db.query(models.User).filter(models.User.username == username).first()
     if user is None:
         raise credentials_exception
     
@@ -47,7 +47,7 @@ def get_current_user_stateless(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW_Authenticate": "Bearer"},
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
     try:
@@ -74,7 +74,7 @@ class RoleChecker:
         # Initializing the RoleChecker with a set of Roles that are allowed to pass
         self.allowed_roles = allowed_roles
     
-    def __sall__(self, user: models.User = Depends(get_current_user)):
+    def __call__(self, user: models.User = Depends(get_current_user)):
         # This way FastAPI will run th get_current_user function to ensure the token is valid
         # Then it checks the 'allowed_roles' for the verified user's role match
         if user.role not in self.allowed_roles:

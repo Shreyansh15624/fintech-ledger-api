@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 def get_password_hash(password: str) -> str:
-    # 'brcypt' requires raw bytes
+    # 'brcypt' requires raw bytes & we are going to be truncating it to 72 bytes so we can
+    # prevent bcrypt crashes / DoS Attacks
     pwd_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password=pwd_bytes, salt=salt)

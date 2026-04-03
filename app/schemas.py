@@ -9,7 +9,7 @@ from typing import Literal
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6, )
+    password: str = Field(..., min_length=6, max_length=72)
     role: Literal["Viewer", "Analyst", "Admin"] = "Viewer"
     
 class UserResponse(BaseModel):
@@ -25,7 +25,7 @@ class UserResponse(BaseModel):
 #==============================#
 
 class RecordCreate(BaseModel):
-    amount: float = Field(..., gt=0, description="Amount must strictly positive")
+    amount: float = Field(..., gt=0, description="Amount must strictly be positive!")
     record_type: str = Field(..., description="Must be either 'income' or 'expense'")
     category: str = Field(..., min_length=2)
     notes: Optional[str] = None

@@ -24,7 +24,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
             detail="Username is already taken!"
         )
     
-    # 2. Handig off the request to Layer-3 (The Brain) to actually crate the user entry
+    # 2. Handing off the request to Layer-3 (The Brain) to actually create the user entry
     new_user = user_service.create_user(db=db, user=user)
 
     return new_user
@@ -34,7 +34,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # 1. To find the user in the database by their username!
     user = db.query(models.User).filter(models.User.username ==form_data.username).first()
     if not user:
-        # MITIGATION: Runnigng our custom fake hash so the server takes the exact smae amount
+        # MITIGATION: Running our custom fake hash so the server takes the exact same amount
         # of time, masking whether the username actually exists or not
         user_service.dummy_verify()
         raise HTTPException(
@@ -46,7 +46,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user_service.verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detial="Invalid Credentials",
+            detail="Invalid Credentials",
         )
     
     # 3. Generate the JWT Token
@@ -65,7 +65,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me")
-def read_usrs_me(current_user: dict = Depends(get_current_user_stateless)):
+def read_users_me(current_user: dict = Depends(get_current_user_stateless)):
     # This route is strictly protected, if there's no token / a bad token, the
     # Dependency blocks it and it will never run!
     return {"status": "Access Granted", "user_data": current_user}
