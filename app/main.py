@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app import models
 from app.database import engine
+from app.routers import auth
 
 # 1. The Spark: This is the inception of the 'zorvyn.db' file by building
 # all the tables based of the 'models.py' file
@@ -13,7 +14,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# 3. A quick health check route to check how the server is doing
+# 3. Plugging the Router into the Application
+app.include_router(auth.router)
+
+
+# 4. A quick health check route to check how the server is doing
 @app.get("/")
 def read_root():
     return {"status": "Zorvyn API Vault is Online & Healthy!"}
