@@ -1,6 +1,9 @@
 # Environments
 .venv/
 env/
+.env
+.env.*
+!.env.example
 
 # Python Cache
 __pycache__/
