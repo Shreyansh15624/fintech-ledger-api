@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DataTime
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import func
+from sqlalchemy.sql import func
 from .database import Base
 
 class User(Base):
@@ -22,7 +22,7 @@ class Record(Base):
     amount = Column(Float, nullable=False)
     record_type = Column(String, nullable=False) # Ex: "income" or "expense"
     category = Column(String, nullable=False)
-    date = Column(DataTime(timezone=True), server_default=func.now(), nullable=False)
+    date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(String, nullable=True)
 
     # The Foreign Key is linking this record directly to a specific user
