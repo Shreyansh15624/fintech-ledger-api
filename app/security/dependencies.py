@@ -39,34 +39,35 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     
     return user
 
-    def get_current_user_stateless(token: str = Depends(oauth2_scheme)):
-        """
-        A High Speed, zero-database dependency.
-        Trusts the cryptographically signed JWT payload entirely.
-        """
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW_Authenticate": "Bearer"},
+def get_current_user_stateless(token: str = Depends(oauth2_scheme)):
+    """
+    A High Speed, zero-database dependency.
+    Trusts the cryptographically signed JWT payload entirely.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW_Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(
+            token,
+            jwt_handler.SECRET_KEY,
+            algorithms=[jwt_handler.ALGORITHM],
         )
-        try:
-            payload = jwt.decode(
-                token,
-                jwt_handler.SECRET_KEY,
-                algorithms=[jwt_handler.ALGORITHM],
-            )
-            username: str = payload.get("sub")
-            role: str = payload.get("role")
 
-            if username is None or role is None:
-                raise credentials_exception
-            
-            # Returning a simplified dictionary instead of a database model!
-            # ZERO-Database Hits! O(1) Time Complexity!
-            return {"username": username, "role": role}
-
-        except jwt.PyJWTError:
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None or role is None:
             raise credentials_exception
+        
+        # Returning a simplified dictionary instead of a database model!
+        # ZERO-Database Hits! O(1) Time Complexity!
+        return {"username": username, "role": role}
+
+    except jwt.PyJWTError:
+        raise credentials_exception
 
 class RoleChecker:
     def __init__(self, allowed_roles: set):

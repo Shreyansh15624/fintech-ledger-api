@@ -6,8 +6,7 @@ from app.services import user_service
 from fastapi.security import OAuth2PasswordRequestForm
 from app.security import jwt_handler
 from datetime import timedelta
-
-
+from app.security.dependencies import get_current_user, get_current_user_stateless
 
 # Starting the Router Instance
 router = APIRouter(
@@ -64,3 +63,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     # 4. Returning the strict format OAuth2 expects
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me")
+def read_usrs_me(current_user: dict = Depends(get_current_user_stateless)):
+    # This route is strictly protected, if there's no token / a bad token, the
+    # Dependency blocks it and it will never run!
+    return {"status": "Access Granted", "user_data": current_user}
