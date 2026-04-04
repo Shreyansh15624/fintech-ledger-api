@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app import models, schemas
 from app.database import get_db
-from app.security.dependencies import get_current_user, RoleChecker
+from app.security.dependencies import RoleChecker
 
 router = APIRouter(
     prefix="/api/v1/records",
