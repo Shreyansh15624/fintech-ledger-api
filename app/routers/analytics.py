@@ -6,7 +6,7 @@ from app.database import get_db
 from app.security.dependencies import RoleChecker
 
 router = APIRouter(
-    prefix="/app/v1/analytics",
+    prefix="/api/v1/analytics",
     tags=["Analytics Dashboard"],
 )
 

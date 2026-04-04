@@ -32,11 +32,13 @@ def create_record(
 # 2. READING ALL THE RECORDS (Locked to 'Admin' & 'Analyst' Roles)
 @router.get("/", response_model=List[schemas.RecordResponse])
 def get_records(
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker({"Admin", "Analyst"}))
 ):
     # Querying the dataset for all the records
-    records = db.query(models.Record).all()
+    records = db.query(models.Record).offset(skip).limit(limit).all()
     return records
 
 # 3. UPDATE RECORD (Strictly Locked to 'Admin' Role)

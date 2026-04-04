@@ -26,7 +26,7 @@ class UserResponse(BaseModel):
 
 class RecordCreate(BaseModel):
     amount: float = Field(..., gt=0, description="Amount must strictly be positive!")
-    record_type: str = Field(..., description="Must be either 'income' or 'expense'")
+    record_type: Literal["income", "expense"] = Field(..., description="Strictly 'income' or 'expense'")
     category: str = Field(..., min_length=2)
     notes: Optional[str] = None
 
