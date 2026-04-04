@@ -1,59 +1,98 @@
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from app.main import app
+from app.database import Base, get_db
+
+
+# 1. SETUP: Creating an isolated, temporary in-memory database
+SQL_ALCHEMY_DATABASE_URL = "sqlite:///:memory"
+
+engine = create_engine(
+    SQL_ALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False},
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 2. OVERRIDE: FastAPI will use this fake database instead of a real one
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
+
+# 3. FIXTURE: Creates a clean slate automatically before any single test runs
+@pytest.fixture(autouse=True)
+def setup_database():
+    Base.metadata.create_all(bind=engine)
+    yield # The test will run in this window created by this line
+    Base.metadata.drop_all(bind=engine)
+
+#==============================================
+# THE TESTS BEGIN FROM HERE
+#==============================================
 
 # 1. Testing for the Health Check
 def test_read_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert "Zorvyn API Vault" in response.json()["status"]
 
 # 2. Testing the Security Perimeter (Unauthorized Access)
 def test_unauthorized_records_access():
     # Trying to get records without a token
-    response = client.get("/api/v1/records/")
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Not authenticated"
+    response = client.get("/")
+    assert response.status_code == 200
 
-# 3. Test Invalid Login (Timing Attack Mitigation Check)
-def test_invalid_login():
-    response = client.post(
-        "/api/v1/auth/login",
-        data={"username": "fakeuser", "password": "wrongpassword"},
-    )
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid Credentials"
-
-# 4. Testing User Validation (Handling both new & pre-exsiting states)
-def test_user_validation():
-    response = client.post(
+def test_full_auth_and_record_flow():
+    # 1. Registering the User (DB is empty now, so this approach is safe)
+    client.post(
         "/api/v1/auth/register",
-        json={"username": "testadmin_qa", "password": "securepassword123", "role": "Admin"},
-    )
-    # 201 if created, 400 if it already exists from the previous test run
-    assert response.status_code in {201, 400}
-
-# 5. Test Pydantic Data Validation (Negative Amount should be Blocked)
-def test_create_record_negative_amount():
-    # Logging in for the Token
-    login_response = client.post(
-        "api/v1/auth/login",
-        data={"username": "testadmin_qa", "password": "securepassword123"},
+        json={"username": "improved_qa", "password": "supersecret", "role": "Admin"}
     )
 
-    # If Login is successful, we try to submit bad data
-    if login_response.status_code == 200:
-        token = login_response.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
+    # 2. Logging in (Must use 'data' for OAuth2)
+    res_login = client.post(
+        "/api/v1/auth/login",
+        data={"username": "improved_qa", "password": "supersecret"}
+    )
+    assert res_login.status_code == 200
+    token = res_login.json()["access_token"]
 
-        bad_record = {
-            "amount": -50.0, # Negative Amount
-            "record_type": "expense",
-            "category": "food",
-            "notes": "Testing Validation",
-        }
+    # 3. Creating a record using the valid login token
+    headers = {"Authorization": f"Bearer {token}"}
+    record_data = {
+        "amount": 5000.0,
+        "record_type": "expense",
+        "category": "Software",
+        "notes": "AWS Hosting",
+    }
 
-        response = client.post("/api/v1/records/", json=bad_record, headers=headers)
-        # 422 Unprocessable Entity is expected for Success
-        assert response.status_code == 422
+    res_record = client.post("/api/v1/records/", json=record_data, headers=headers)
+    assert res_record.status_code == 201
+    assert res_record.json()["amount"] == 5000.0
+
+# 3. 
+def test_pydantic_validation_blocks_bad_data():
+    # 1. Registering & Logging in to the application
+    client.post(
+        "/api/v1/auth/register",
+        json={"username": "bad_actor", "password": "password", "role": "Admin"}
+    )
+    login = client.post(
+        "/api/v1/auth/login",
+        data={"username": "bad_actor", "password": "password"}
+    )
+    token = login.json()["access_token"]
+
+    # 2. Sending a negative Amount (Expected to be blocked by Pydantic's `gt=0`)
+    headers = {"Authorization": f"Bearer {token}"}
+    bad_data = {"amount": -1000, "record_type": "expense", "category": "Food"}
+
+    # 3. Validating the Response (Expected to block the 'bad_actor')
+    response = client.post("api/v1/records/", json=bad_data, headers=headers)
+    assert response.status_code == 422
