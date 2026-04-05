@@ -14,6 +14,7 @@ router = APIRouter(
     tags=["Authentication"],
 )
 
+
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # 1. Checking if the username already exists in the Vault
