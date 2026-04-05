@@ -1,5 +1,5 @@
 
-# 🏦 Zorvyn Finance API: Secure Records & Analytics Engine
+# 🏦 Fintech Ledger API: Secure Records & Analytics Engine
 
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi)

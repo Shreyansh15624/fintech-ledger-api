@@ -16,7 +16,7 @@ def get_all_users(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker({"Admin"}))
 ):
-    users = db.query(models.User).filter(models.User.is_active == True).all()
+    users = db.query(models.User).filter(models.User.is_active == True).all()  # noqa: E712
     return users
 
 # ADMIN: View all Soft Deleted Users
@@ -25,7 +25,7 @@ def get_all_soft_deleted_users(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker({"Admin"}))
 ):
-    users = db.query(models.User).filter(models.User.is_active == False).all()
+    users = db.query(models.User).filter(models.User.is_active == False).all()  # noqa: E712
     return users
 
 # ADMIN: Updates the User Roles
