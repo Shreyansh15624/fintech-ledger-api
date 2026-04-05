@@ -34,23 +34,31 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # 1. To find the user in the database by their username!
     user = db.query(models.User).filter(models.User.username ==form_data.username).first()
+    
+    # 2a. NEW GATEKEEPER: Checking if the account is deactivated
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your Account has been Deactivated. Contact Customer Support",
+        )
+
+    # 2b. MITIGATION: Running our custom fake hash so the server takes the exact same amount
+    # of time, masking whether the username actually exists or not
     if not user:
-        # MITIGATION: Running our custom fake hash so the server takes the exact same amount
-        # of time, masking whether the username actually exists or not
         user_service.dummy_verify()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Credentials",
         )
     
-    # 2. To verify the Password's match to the Hash
+    # 3. To verify the Password's match to the Hash
     if not user_service.verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Credentials",
         )
     
-    # 3. Generate the JWT Token
+    # 4. Generate the JWT Token
     # We embed both the username & the role into the token payload
     access_token_expires = timedelta(minutes=jwt_handler.ACCESS_TOKEN_EXPIRE_MINUTES)
     token_payload = {
@@ -62,7 +70,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data=token_payload, expires_delta=access_token_expires
     )
 
-    # 4. Returning the strict format OAuth2 expects
+    # 5. Returning the strict format OAuth2 expects
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me")

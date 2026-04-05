@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
+from sqlalchemy import Column, Boolean, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -14,6 +14,9 @@ class User(Base):
 
     # Establishig the relationship: A user can own multiple records
     records = relationship("Record", back_populates="owner")
+
+    # A Soft Delete Parameter
+    is_active = Column(Boolean, default=True)
 
 class Record(Base):
     __tablename__ = "records"
