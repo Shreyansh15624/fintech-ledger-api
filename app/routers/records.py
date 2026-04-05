@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app import models, schemas
 from app.database import get_db
 from app.security.dependencies import RoleChecker
@@ -32,13 +32,51 @@ def create_record(
 # 2. READING ALL THE RECORDS (Locked to 'Admin' & 'Analyst' Roles)
 @router.get("/", response_model=List[schemas.RecordResponse])
 def get_records(
+    # Pagination
     skip: int = 0,
     limit: int = 100,
+    
+    # Dynamic Search Parameters
+    record_type: Optional[str] = None,
+    category: Optional[str] = None,
+    min_amount: Optional[float] = None,
+    max_amount: Optional[float] = None,
+    
+    # Dependencies for Database & Authentication
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker({"Admin", "Analyst"}))
 ):
-    # Querying the dataset for all the records
-    records = db.query(models.Record).offset(skip).limit(limit).all()
+    # ------ LOGICAL VALIDATION GATE ------ #
+    if min_amount is not None and max_amount is not None:
+        if max_amount < min_amount:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Maximum Amount cannot be less than Minimum Amount",
+            )
+    
+    
+    # Starting with a base query
+    query = db.query(models.Record)
+
+    # 1. If "Exact Match", we filter by "income" or "expense"
+    if record_type:
+        query = query.filter(models.Record.record_type == record_type)
+
+    # 2. If "Fuzzy Match", search by category (ex: "soft" finds "Software")
+    if category:
+        query = query.filter(models.Record.category.ilike(f"%{category}%"))
+
+    # 3. If "Range Match", but we filter by "Minimum Amount"
+    if min_amount is not None:
+        query = query.filter(models.Record.amount >= min_amount)
+
+    # 4. if "Range Match", but we filter by "Maximum Amount"
+    if max_amount is not None:
+        query = query.filter(models.Record.amount <= max_amount)
+    
+    # Executing this dynamically built query with pagination
+    records = query.offset(skip).limit(limit).all()
+
     return records
 
 # 3. UPDATE RECORD (Strictly Locked to 'Admin' Role)

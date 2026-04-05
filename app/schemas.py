@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Dict, Optional, Literal
 from datetime import datetime
-from typing import Literal
 
 #===========================#
 # Building the User Schemas #
@@ -30,10 +29,32 @@ class RecordCreate(BaseModel):
     category: str = Field(..., min_length=2)
     notes: Optional[str] = None
 
-
 class RecordResponse(RecordCreate):
     id: int
     date: datetime
     user_id: int
 
     model_config = {"from_attributes": True}
+
+#========================================#
+# Building the Analytics Payload Schemas #
+#========================================#
+
+class TotalSchema(BaseModel):
+    income: int
+    expense: int
+    net_balance: int
+
+class MetricsSchema(BaseModel):
+    total_transaction_count: int
+    average_expese_value: float
+
+class TopExpenseSchema(BaseModel):
+    category: str
+    amount: float
+
+class FinancialSummaryResponse(BaseModel):
+    totals: TotalSchema
+    metrics: MetricsSchema
+    expense_breakdown: Dict[str, float]
+    top_expenses: List[TopExpenseSchema]
