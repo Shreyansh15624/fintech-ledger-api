@@ -1,4 +1,3 @@
-
 # 🏦 Fintech Ledger API: Secure Records & Analytics Engine
 
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -9,21 +8,21 @@
 
 ## Description
 
-Managing financial data requires a backend architecture that is not only logically sound but heavily fortified against edge-case vulnerabilities and performance bottlenecks. To meet the demanding requirements of modern FinTech infrastructure, I developed this robust FastAPI service centered around secure data modeling, strict Role-Based Access Control (RBAC), and efficient server-side data processing. 
+Managing financial data requires a backend architecture that is logically sound and fortified against vulnerabilities and performance bottlenecks. To meet standard FinTech requirements, I developed this FastAPI service centered around secure data modeling, strict Role-Based Access Control (RBAC), and efficient server-side data processing. 
 
-I engineered a clean, multi-layered architecture that strictly separates API routing, security middleware, business logic, and database operations. Recognizing the vulnerabilities inherent in cryptographic algorithms, I implemented a strict Pydantic validation gateway to prevent `bcrypt` DoS attacks by capping payload sizes at the network perimeter. Furthermore, to ensure high-speed read operations across the API, I designed an O(1) stateless JWT dependency. This bypasses expensive database lookups by validating users via cryptographic signatures.
+I engineered a clean, multi-layered architecture that strictly separates API routing, security middleware, business logic, and database operations. Recognizing vulnerabilities in cryptographic algorithms, I implemented a strict Pydantic validation gateway to prevent `bcrypt` DoS attacks by capping payload sizes at the network perimeter. Furthermore, to ensure high-speed read operations across the API, I designed an O(1) stateless JWT dependency, which bypasses expensive database lookups by validating users via cryptographic signatures.
 
 ### 📊 Advanced Data Operations
 * **Dynamic Search Engine:** The records endpoint supports dynamic, multi-parameter querying (exact type matches, fuzzy category text matching, and strict numerical boundaries) using RESTful query parameters.
-* **High-Performance Analytics:** Instead of relying on client-side processing or memory-heavy ORM loops, the dashboard endpoint offloads complex mathematical operations (Transaction Velocity, Average Transaction Value, and Outlier Detection) directly to the SQLite C-engine via SQLAlchemy groupings. All responses are strictly typed using nested Data Transfer Object (DTO) schemas.
+* **High-Performance Analytics:** Instead of relying on memory-heavy Python loops, the dashboard endpoint offloads complex mathematical operations (Transaction Velocity, Average Transaction Value, and Outlier Detection) directly to the SQLite C-engine via SQLAlchemy groupings. All responses are strictly typed using nested Data Transfer Object (DTO) schemas.
 
-> Make sure to take a look at the documentation after starting the app at this link: [Documentation](http://127.0.0.1:8000/redoc)
+> Make sure to take a look at the documentation after starting the app at this link: [Documentation](http://localhost:8000/redoc)
 
 ## Motivation
 
-This project was built as a comprehensive backend assessment for Zorvyn FinTech. My primary motivation was to go beyond basic CRUD operations and demonstrate a senior-level understanding of system design tradeoffs, resource management, and clean coding principles. 
+This project was built as a comprehensive backend assessment. My primary motivation was to go beyond basic CRUD operations and demonstrate a strong foundational understanding of system design tradeoffs, resource management, and clean coding principles. 
 
-To prove the stability of this architecture, I engineered a highly isolated Pytest suite utilizing dependency overrides and automated in-memory (`sqlite:///:memory:`) database fixtures. This application serves as a showcase of my readiness to write maintainable, highly secure Python code that protects both user data and server infrastructure.
+To prove the stability of this architecture, I engineered a highly isolated Pytest integration suite utilizing dependency overrides and automated in-memory (`sqlite:///:memory:`) database fixtures. This application serves as a showcase of my readiness to write maintainable, secure Python code that protects both user data and server infrastructure.
 
 ## Quick Start
 
@@ -31,8 +30,8 @@ This project utilizes `uv` for exceptionally fast dependency management and envi
 
 **1. Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/zorvyn
-cd zorvyn
+git clone https://github.com/yourusername/fintech-ledger-api
+cd fintech-ledger-api
 ```
 
 **2. Install dependencies:**
@@ -47,7 +46,7 @@ Launch the Uvicorn ASGI server with the reload flag for development:
 ```bash
 uv run uvicorn app.main:app --reload
 ```
-*(The SQLite database `zorvyn.db` will automatically initialize on the first run).*
+*(The SQLite database `ledger.db` will automatically initialize on the first run).*
 
 ## Usage & API Documentation
 
@@ -59,7 +58,7 @@ Once the server is running, FastAPI automatically generates interactive document
 The API enforces strict RBAC across its endpoints. You must register a user and authenticate via the Swagger UI padlock to receive a JWT Bearer token.
 * **Viewer:** Read-only access to standard API metadata.
 * **Analyst:** Granted read-access to the `GET /api/v1/records/` and `GET /api/v1/analytics/summary` endpoints.
-* **Admin:** Full CRUD privileges, including the ability to `POST`, `PUT`, and `DELETE` financial records.
+* **Admin:** Full CRUD privileges, including the ability to `POST`, `PUT`, and `DELETE` financial records, as well as User Management.
 
 **Filtering & Pagination Feature:**
 The records listing endpoint supports query parameters for optimized database querying and filtering (e.g., `/api/v1/records/?skip=0&limit=50&record_type=expense&category=Housing&min_amount=500`).
