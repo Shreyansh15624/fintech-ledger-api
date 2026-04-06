@@ -12,6 +12,12 @@ Managing financial data requires a backend architecture that is logically sound 
 
 I engineered a clean, multi-layered architecture that strictly separates API routing, security middleware, business logic, and database operations. Recognizing vulnerabilities in cryptographic algorithms, I implemented a strict Pydantic validation gateway to prevent `bcrypt` DoS attacks by capping payload sizes at the network perimeter. Furthermore, to ensure high-speed read operations across the API, I designed an O(1) stateless JWT dependency, which bypasses expensive database lookups by validating users via cryptographic signatures.
 
+<br>
+<p align="center">
+  <img src="./architecture.png" alt="Project Architecture Overview" width="85%">
+</p>
+<br>
+
 ### 📊 Advanced Data Operations
 * **Dynamic Search Engine:** The records endpoint supports dynamic, multi-parameter querying (exact type matches, fuzzy category text matching, and strict numerical boundaries) using RESTful query parameters.
 * **High-Performance Analytics:** Instead of relying on memory-heavy Python loops, the dashboard endpoint offloads complex mathematical operations (Transaction Velocity, Average Transaction Value, and Outlier Detection) directly to the SQLite C-engine via SQLAlchemy groupings. All responses are strictly typed using nested Data Transfer Object (DTO) schemas.
