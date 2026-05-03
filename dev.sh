@@ -16,10 +16,11 @@ show_help() {
     echo "Usage: ./dev.sh [COMMAND]"
     echo ""
     echo "Commands:"
-    echo "  up      Start the Docker databases and launch the FastAPI server"
-    echo "  test    Start the Docker databases and run the Pytest suite and teardown"
-    echo "  down    Safely stop and remove all the background Docker containers"
-    echo "  help    Display this menu"
+    echo "  up          Start the Docker databases and launch the FastAPI server"
+    echo "  test        Start the Docker databases and run the Pytest suite and teardown"
+    echo "  down        Safely stop and remove all the background Docker containers"
+    echo "  help        Display this menu"
+    echo "  migrate     Apply any pending Alembic schema updates"
 }
 
 check_env(){
@@ -51,7 +52,18 @@ case "$1" in
         echo -e "${GREEN}Launching Uvicorn server...${NC}"
         uv run uvicorn app.main:app --reload
         ;;
-    
+
+    migration)
+        check_env
+        echo -e "${YELLOW}Booting Primary Database for migration...${NC}"
+        sudo docker compose --env-file .env up -d
+
+        wait_for_postgres
+
+        echo -e "${GREEN}Applying Alembic Upgrades...${NC}"
+        uv run alembic upgrade head
+        echo -e "${GREEN}Schema is up to date!${NC}"
+
     test)
         check_env
         echo -e "${YELLOW}Preparing Isolated Test Environment...${NC}"

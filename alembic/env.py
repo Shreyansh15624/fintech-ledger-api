@@ -1,13 +1,33 @@
+import os
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from dotenv import load_dotenv
+
+# Opening the local vault to get credentials
+load_dotenv()
+
+# IMporting the database Base and models so that Alembic can read the schema
+from app.database import Base
+import app.models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Dynamically building the connection string so the secrets aren't hardcoded
+db_user = os.getenv("POSTGRES_USER")
+db_pass = os.getenv("POSTGRES_PASSWORD")
+db_name = os.getenv("POSTGRES_DB")
+print(db_user)
+secure_url = f"postgresql://{db_user}:{db_pass}@127.0.0.1:5432/{db_name}"
+
+# Overwriting the defualt sqlalchemy.url in alembic.ini
+config.set_main_option("sqlalchemy.url", secure_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -18,7 +38,9 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
+# Pointing Alembic to the actual model structures
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
