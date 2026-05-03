@@ -23,7 +23,7 @@ show_help() {
 }
 
 check_env(){
-    if [ ! -f .env]; then
+    if [ ! -f .env ]; then
         echo - e "${RED}Error: .env file not found. Please create one before starting.${NC}"
         exit 1
     fi
@@ -63,13 +63,13 @@ case "$1" in
         uv run pytest tests/
 
         echo -e "${YELLOW}Tearing down the Test Environment...${NC}"
-        sudo docker compose down
+        sudo docker compose --env-file .env down
         echo -e "${GREEN}Test cycle complete. Infrastructure spun down safely.${NC}"
         ;;
     
     down)
         ehco -e "${YELLOW}Spinning down all database infrastructure...${NC}"
-        sudo docker compose down
+        sudo docker compose --env-file .env down
         echo -e "${GREEN}All background processes stopped. Memory freed.${NC}"
         ;;
     
