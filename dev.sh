@@ -68,7 +68,7 @@ case "$1" in
         ;;
     
     down)
-        ehco -e "${YELLOW}Spinning down all database infrastructure...${NC}"
+        echo -e "${YELLOW}Spinning down all database infrastructure...${NC}"
         sudo docker compose --env-file .env down
         echo -e "${GREEN}All background processes stopped. Memory freed.${NC}"
         ;;
