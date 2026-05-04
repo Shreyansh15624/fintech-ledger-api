@@ -8,21 +8,21 @@ from app.security.dependencies import RoleChecker
 router = APIRouter()
 
 # ADMIN: View all Users
-@router.get("/", response_model=List[schemas.UserResponse])
+@router.get("/", response_model=List[schemas.CustomerResponse])
 def get_all_users(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(RoleChecker({"Admin"}))
+    current_user: models.Employee = Depends(RoleChecker({"Admin"}))
 ):
-    users = db.query(models.User).filter(models.User.is_active == True).all()  # noqa: E712
+    users = db.query(models.Employee).filter(models.Employee.is_active == True).all()  # noqa: E712
     return users
 
 # ADMIN: View all Soft Deleted Users
-@router.get("/soft_deleted", response_model=List[schemas.UserResponse])
+@router.get("/soft_deleted", response_model=List[schemas.CustomerResponse])
 def get_all_soft_deleted_users(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(RoleChecker({"Admin"}))
+    current_user: models.Employee = Depends(RoleChecker({"Admin"}))
 ):
-    users = db.query(models.User).filter(models.User.is_active == False).all()  # noqa: E712
+    users = db.query(models.Employee).filter(models.Employee.is_active == False).all()  # noqa: E712
     return users
 
 # ADMIN: Updates the User Roles
@@ -33,7 +33,7 @@ def update_user_role(
     db: Session = Depends(get_db),
 
     # Privilege is strictly locked to Admin, sothat only they may promote / demote
-    current_user: models.User = Depends(RoleChecker({"Admin"}))
+    current_user: models.Employee = Depends(RoleChecker({"Admin"}))
 ):
     valid_roles = {"Admin", "Analyst", "Viewer"}
     if new_role not in valid_roles:
@@ -42,7 +42,7 @@ def update_user_role(
             detail=f"Invalid Role! Must be one of {valid_roles}",
         )
     
-    user_query = db.query(models.User).filter(models.User.id == user_id)
+    user_query = db.query(models.Employee).filter(models.Employee.id == user_id)
     user = user_query.first()
 
     if not user:
@@ -61,9 +61,9 @@ def update_user_role(
 def deactivate_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_users: models.User = Depends(RoleChecker({"Admin"}))
+    current_users: models.Employee = Depends(RoleChecker({"Admin"}))
 ):
-    user_query = db.query(models.User).filter(models.User.id == user_id)
+    user_query = db.query(models.Employee).filter(models.Employee.id == user_id)
     user = user_query.first()
 
     if not user:

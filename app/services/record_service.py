@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app import models, schemas
 
-def execute_transfer(db: Session, transfer: schemas.TransferRequest):
+def execute_transfer(db: Session, transfer: schemas.TransformRequest):
     # Precaution: Preventing Transfering to oneself
     if transfer.sender_id == transfer.receiver_id:
         raise HTTPException(
@@ -15,16 +15,16 @@ def execute_transfer(db: Session, transfer: schemas.TransferRequest):
     first_lock_id, second_lock_id = sorted([transfer.sender_id, transfer.receiver_id])
 
     try:
-        # 2. Locking the first row
-        account_1 = db.query(models.User).filter(models.User.id == first_lock_id).with_for_update().first()
+        # 2. Locking the first row & Focring the memory overwrite with .populate_existing()!
+        account_1 = db.query(models.Customer).filter(models.Customer.id == first_lock_id).with_for_update().populate_existing().first()
         if not account_1:
             raise HTTPException(
                 status_code=404,
                 detail=f"Account {first_lock_id} not found!",
             )
         
-        # 3. Locking the 2nd row
-        account_2 = db.query(models.User).filter(models.User.id == second_lock_id).with_for_update().first()
+        # 3. Locking the 2nd row & Forcing a memory overwrite!
+        account_2 = db.query(models.Customer).filter(models.Customer.id == second_lock_id).with_for_update().populate_existing().first()
         if not account_2:
             raise HTTPException(
                 status_code=404,
@@ -49,7 +49,7 @@ def execute_transfer(db: Session, transfer: schemas.TransferRequest):
 
         # 7. Creating the immutable Ledger Records for the audit trail
         outbound_record = models.Record(
-            user_id=sender.id,
+            customer_id=sender.id,
             amount=-transfer.amount,
             notes=f"Transfer to user {receiver.id}",
             record_type="expense",
@@ -57,7 +57,7 @@ def execute_transfer(db: Session, transfer: schemas.TransferRequest):
         )
 
         inbound_record = models.Record(
-            user_id=receiver.id,
+            customer_id=receiver.id,
             amount=transfer.amount,
             notes=f"Transfer from user {sender.id}",
             record_type="income",

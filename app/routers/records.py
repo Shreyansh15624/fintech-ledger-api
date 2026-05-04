@@ -1,3 +1,4 @@
+from app.security.dependencies import get_current_customer
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -14,12 +15,12 @@ def create_record(
     record: schemas.RecordCreate,
     db: Session = Depends(get_db),
     # The request is intercepted by the Bouncer, right here!
-    current_user: models.User = Depends(RoleChecker({"Admin"}))
+    current_customer: models.Customer = Depends(get_current_customer)
 ):
     # Create the database model & explictly link it to the Admin who created it
     new_record = models.Record(
         **record.model_dump(),
-        user_id=current_user.id,
+        customer_id=current_customer.id,
     )
     db.add(new_record)
     db.commit()
@@ -42,7 +43,7 @@ def get_records(
     
     # Dependencies for Database & Authentication
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(RoleChecker({"Admin", "Analyst"}))
+    current_employee: models.Employee = Depends(RoleChecker({"Admin", "Analyst"}))
 ):
     # ------ LOGICAL VALIDATION GATE ------ #
     if min_amount is not None and max_amount is not None:
@@ -83,7 +84,7 @@ def update_record(
     id: int,
     update_record: schemas.RecordCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(RoleChecker({"Admin"}))
+    current_employee: models.Employee = Depends(RoleChecker({"Admin"}))
 ):
     # 1. Finding the specific record
     record_query = db.query(models.Record).filter(models.Record.id == id)
@@ -107,7 +108,7 @@ def update_record(
 def delete_record(
     id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(RoleChecker({"Admin"})),
+    current_employee: models.Employee = Depends(RoleChecker({"Admin"})),
 ):
     record_query = db.query(models.Record).filter(models.Record.id == id)
     record = record_query.first()
@@ -124,10 +125,10 @@ def delete_record(
 # 5. FUND TRANSFER (Pessimistic Locking Implementation)
 @router.post("/transfer", status_code=status.HTTP_200_OK)
 def initiate_transfer(
-    payload: schemas.TransferRequest,
+    payload: schemas.TransformRequest,
     db: Session = Depends(get_db),
     # Ensuring that only the authenticated roles can trigger transfer
-    current_user: models.User = Depends(RoleChecker({"Admin", "User", "Analyst"}))
+    current_customer: models.Customer = Depends(get_current_customer)
 ):
     """
     Executes a high concurrency fund transfer between two users using Pessimistic Row Locking.

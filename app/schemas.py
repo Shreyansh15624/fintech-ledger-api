@@ -1,66 +1,78 @@
-from pydantic import BaseModel, Field, PositiveFloat
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Literal
 from datetime import datetime
 from decimal import Decimal
-#===========================#
-# Building the User Schemas #
-#===========================#
 
-class UserCreate(BaseModel):
+#================================#
+# DOMAIN-A: Employees (Internal) #
+#================================#
+class EmployeeCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=72)
-    role: Literal["Viewer", "Analyst", "Admin"] = "Viewer"
+    role: Literal["Analyst", "Admin"]
 
-class UserResponse(BaseModel):
+class EmployeeResponse(BaseModel):
     id: int
     username: str
     role: str
     is_active: bool
-    
-    # Telling Pydantic to read Data even if its not a 'dict()', but an 'ORM Model'
+
     model_config = {"from_attributes": True}
 
-#==============================#
-# Building the Record  Schemas #
-#==============================#
+#================================#
+# DOMAIN-B: Customers (External) #
+#================================#
+class CustomerCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6, max_length=72)
 
+class CustomerResponse(BaseModel):
+    id: int
+    username: str
+    balance: Decimal
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+#================================#
+#   DOMAIN-C: Ledger (Records)   #
+#================================#
 class RecordCreate(BaseModel):
-    amount: Decimal = Field(..., gt=0, description="Amount must strictly be positive!")
-    record_type: Literal["income", "expense"] = Field(..., description="Strictly 'income' or 'expense'")
+    amount: Decimal = Field(..., gt=0, description="Amount must strictly be postive!")
+    record_type: Literal["income", "expense"] = Field(..., description='Strictly "income" or "expense".')
     category: str = Field(..., min_length=2)
     notes: Optional[str] = None
 
 class RecordResponse(RecordCreate):
     id: int
     date: datetime
-    user_id: int
+    customer_id: int
 
     model_config = {"from_attributes": True}
 
-class TransferRequest(BaseModel):
+class TransformRequest(BaseModel):
     sender_id: int
     receiver_id: int
     amount: Decimal = Field(gt=0, description="Amount must be strictly positive!")
 
-#========================================#
-# Building the Analytics Payload Schemas #
-#========================================#
-
+#================================#
+#    Analytics Payload Schema    #
+#================================#
 class TotalSchema(BaseModel):
-    income: int
-    expense: int
-    net_balance: int
+    income: Decimal
+    expense: Decimal
+    net_balance: Decimal
 
 class MetricsSchema(BaseModel):
     total_transaction_count: int
-    average_expese_value: float
+    average_expense_value: Decimal
 
 class TopExpenseSchema(BaseModel):
     category: str
-    amount: float
+    amount: Decimal
 
 class FinancialSummaryResponse(BaseModel):
     totals: TotalSchema
     metrics: MetricsSchema
-    expense_breakdown: Dict[str, float]
+    expense_breakdown: Dict[str, Decimal]
     top_expenses: List[TopExpenseSchema]

@@ -12,7 +12,7 @@ router = APIRouter()
 def get_financial_summary(
     db: Session = Depends(get_db),
     # Limit the privileges to 'Analyst' & 'Admin' roles
-    current_user: models.User = Depends(RoleChecker({"Analyst", "Admin"}))
+    current_employee: models.Employee = Depends(RoleChecker({"Analyst", "Admin"}))
 ):
 
         # A) BASE TOTALS

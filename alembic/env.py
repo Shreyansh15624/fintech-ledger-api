@@ -23,7 +23,6 @@ config = context.config
 db_user = os.getenv("POSTGRES_USER")
 db_pass = os.getenv("POSTGRES_PASSWORD")
 db_name = os.getenv("POSTGRES_DB")
-print(db_user)
 secure_url = f"postgresql://{db_user}:{db_pass}@127.0.0.1:5432/{db_name}"
 
 # Overwriting the defualt sqlalchemy.url in alembic.ini

@@ -15,14 +15,14 @@ def test_unauthorized_records_access(client):
 def test_full_auth_and_record_flow(client):
     # 1. Registering the User (DB is empty now, so this approach is safe)
     client.post(
-        "/api/v1/auth/register",
-        json={"username": "improved_qa", "password": "supersecret", "role": "Admin"}
+        "/api/v1/auth/customer/register",
+        json={"username": "new_customer", "password": "supersecret"}
     )
 
     # 2. Logging in (Must use 'data' for OAuth2)
     res_login = client.post(
-        "/api/v1/auth/login",
-        data={"username": "improved_qa", "password": "supersecret"}
+        "/api/v1/auth/customer/login",
+        data={"username": "new_customer", "password": "supersecret"}
     )
     assert res_login.status_code == 200
     token = res_login.json()["access_token"]
@@ -44,11 +44,11 @@ def test_full_auth_and_record_flow(client):
 def test_pydantic_validation_blocks_bad_data(client):
     # 1. Registering & Logging in to the application
     client.post(
-        "/api/v1/auth/register",
-        json={"username": "bad_actor", "password": "password", "role": "Admin"}
+        "/api/v1/auth/customer/register",
+        json={"username": "bad_actor", "password": "password"}
     )
     login = client.post(
-        "/api/v1/auth/login",
+        "/api/v1/auth/customer/login",
         data={"username": "bad_actor", "password": "password"}
     )
     token = login.json()["access_token"]
@@ -70,16 +70,16 @@ def tests_search_engine_validation_error(authorized_client):
     assert response.status_code == 401
     assert "Maximum Amount cannot be less than Minimum Amount" in response.json()["detail"]
 
-def test_deactivated_user_cannot_login(client, deactivated_user):
+def test_deactivated_employee_cannot_login(client, deactivated_employee):
     """
     Tests if the soft-deleted users are properly blocked from logging in during Login Process
     """
     response = client.post(
-        "/api/v1/auth/login",
+        "/api/v1/auth/employee/login",
         data={"username": "fired_analyst", "password": "testpass123"}
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 401
     assert "Deactivated" in response.json()["detail"]
 
 def test_analytics_dashboard(authorized_client, seeded_records):
@@ -95,27 +95,26 @@ def test_analytics_dashboard(authorized_client, seeded_records):
     assert data["metrics"]["total_transaction_count"] == 3
     assert data["expense_breakdown"]["Housing"] == 25000.0
 
-def test_pessimistic_lock_prevents_double_spend(authorized_client, test_db, test_admin_user):
+def test_pessimistic_lock_prevents_double_spend(customer_client, test_db, test_customer):
     """
     Stress test for the /transfer endpoint to ensure pessimistic locking (FOR UPDATE)
     prevents race conditions and double-spending under concurrent load.
     """
     # 1. SETUP: Funding User A & Creating User B
     # Granting the Exisitng test_admin_user $500 to start
-    test_admin_user.balance = 500.00
+    test_customer.balance = 500.00
 
     # Creating the receiver (User B) with a starting balance of $0
-    receiver = models.User(
+    receiver = models.Customer(
         username="receiver_user",
         password_hash="dummyhash",
-        role="Analyst",
         balance=0.00,
     )
     test_db.add(receiver)
     test_db.commit()
     test_db.refresh(receiver)
 
-    sender_id = test_admin_user.id
+    sender_id = test_customer.id
     receiver_id = receiver.id
 
     # 2. THE COLLISION COURSE:
@@ -127,7 +126,7 @@ def test_pessimistic_lock_prevents_double_spend(authorized_client, test_db, test
     # Helper function to fire the authenticated request
     def fire_transfer(payload):
         # Authorized client automatically injects the Bearer token
-        return authorized_client.post("/api/v1/records/transfer", json=payload)
+        return customer_client.post("/api/v1/records/transfer", json=payload)
     
     # 3. THE STRESS TEST: Firing both the requests at the exact smae millisecond!
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
@@ -145,11 +144,11 @@ def test_pessimistic_lock_prevents_double_spend(authorized_client, test_db, test
     assert 400 in status_codes
 
     # 5. THE LEDGER AUDIT: Verify if the final database state is mathematically pure
-    test_db.refresh(test_admin_user)
+    test_db.refresh(test_customer)
     test_db.refresh(receiver)
 
     # Now regardless of which transaction won the race here, the total money within the system must remain exactly $500
-    assert float(test_admin_user.balance) + float(receiver.balance) == 500.00
+    assert float(test_customer.balance) + float(receiver.balance) == 500.00
 
     # The sender's balance must be exactly $100 or $200 depending on which request won
-    assert float(test_admin_user.balance) in {100.00, 200.00}
+    assert float(test_customer.balance) in {100.00, 200.00}

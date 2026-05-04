@@ -20,20 +20,18 @@ def dummy_verify():
     # We basically waste the exact amount of time it takes to hash a password
     bcrypt.hashpw(b"dummy_password", bcrypt.gensalt())
 
-def create_user(db: Session, user: schemas.UserCreate):
-    # 1. Hashing the Incoming Plain Text Password
-    hashed_pw = get_password_hash(user.password)
-
-    # 2. Create the SQLAlchemy Model Instance
-    db_user = models.User(
-        username=user.username,
-        password_hash=hashed_pw,
-        role=user.role
-    )
-
-    # 3. Adding to the Database, Committing the Transaction, and refresh to get the ID
-    db.add(db_user)
+def create_employee(db: Session, employee: schemas.EmployeeCreate):
+    hashed_pw = get_password_hash(employee.password)
+    db_employee = models.Employee(username=employee.username, password_hash=hashed_pw, role=employee.role)
+    db.add(db_employee)
     db.commit()
-    db.refresh(db_user)
+    db.refresh(db_employee)
+    return db_employee
 
-    return db_user
+def create_customer(db: Session, customer: schemas.CustomerCreate):
+    hashed_pw = get_password_hash(customer.password)
+    db_customer = models.Customer(username=customer.username, password_hash=hashed_pw)
+    db.add(db_customer)
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer
