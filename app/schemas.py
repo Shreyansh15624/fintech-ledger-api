@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PositiveFloat
 from typing import List, Dict, Optional, Literal
 from datetime import datetime
 
@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=72)
     role: Literal["Viewer", "Analyst", "Admin"] = "Viewer"
-    
+
 class UserResponse(BaseModel):
     id: int
     username: str

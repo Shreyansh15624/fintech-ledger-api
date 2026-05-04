@@ -63,6 +63,7 @@ case "$1" in
         echo -e "${GREEN}Applying Alembic Upgrades...${NC}"
         uv run alembic upgrade head
         echo -e "${GREEN}Schema is up to date!${NC}"
+        ;;
 
     test)
         check_env
