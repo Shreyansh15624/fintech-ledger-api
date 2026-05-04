@@ -1,3 +1,6 @@
+import concurrent.futures
+from app import models
+
 # 1. Testing for the Health Check
 def test_read_root(client):
     response = client.get("/")
@@ -35,7 +38,7 @@ def test_full_auth_and_record_flow(client):
 
     res_record = client.post("/api/v1/records", json=record_data, headers=headers)
     assert res_record.status_code == 201
-    assert res_record.json()["amount"] == 5000.0
+    assert res_record.json()["amount"] == '5000.00'
 
 # 3. Testing the Pydantic Validation Logic
 def test_pydantic_validation_blocks_bad_data(client):
@@ -91,3 +94,62 @@ def test_analytics_dashboard(authorized_client, seeded_records):
     assert data["totals"]["total_expenses"] == 27000.0 # 25000 + 1500 + 500
     assert data["metrics"]["total_transaction_count"] == 3
     assert data["expense_breakdown"]["Housing"] == 25000.0
+
+def test_pessimistic_lock_prevents_double_spend(authorized_client, test_db, test_admin_user):
+    """
+    Stress test for the /transfer endpoint to ensure pessimistic locking (FOR UPDATE)
+    prevents race conditions and double-spending under concurrent load.
+    """
+    # 1. SETUP: Funding User A & Creating User B
+    # Granting the Exisitng test_admin_user $500 to start
+    test_admin_user.balance = 500.00
+
+    # Creating the receiver (User B) with a starting balance of $0
+    receiver = models.User(
+        username="receiver_user",
+        password_hash="dummyhash",
+        role="Analyst",
+        balance=0.00,
+    )
+    test_db.add(receiver)
+    test_db.commit()
+    test_db.refresh(receiver)
+
+    sender_id = test_admin_user.id
+    receiver_id = receiver.id
+
+    # 2. THE COLLISION COURSE:
+    # Payload 1 wants $400 & Payload 2 wants $300.
+    # Total request is $700, but the balance is only $500.
+    payload_1 = {"sender_id": sender_id, "receiver_id": receiver_id, "amount": 400.00}
+    payload_2 = {"sender_id": sender_id, "receiver_id": receiver_id, "amount": 300.00}
+
+    # Helper function to fire the authenticated request
+    def fire_transfer(payload):
+        # Authorized client automatically injects the Bearer token
+        return authorized_client.post("/api/v1/records/transfer", json=payload)
+    
+    # 3. THE STRESS TEST: Firing both the requests at the exact smae millisecond!
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future1 = executor.submit(fire_transfer, payload_1)
+        future2 = executor.submit(fire_transfer, payload_2)
+
+        response1 = future1.result()
+        response2 = future2.result()
+    
+    # 4. THE VERDICT: Checking the Status Codes
+    status_codes = [response1.status_code, response2.status_code]
+
+    # Checking to see if exactly one transaction absolutely succeed & one failed!
+    assert 200 in status_codes
+    assert 400 in status_codes
+
+    # 5. THE LEDGER AUDIT: Verify if the final database state is mathematically pure
+    test_db.refresh(test_admin_user)
+    test_db.refresh(receiver)
+
+    # Now regardless of which transaction won the race here, the total money within the system must remain exactly $500
+    assert float(test_admin_user.balance) + float(receiver.balance) == 500.00
+
+    # The sender's balance must be exactly $100 or $200 depending on which request won
+    assert float(test_admin_user.balance) in {100.00, 200.00}

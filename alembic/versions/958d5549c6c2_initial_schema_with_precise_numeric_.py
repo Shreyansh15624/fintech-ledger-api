@@ -1,8 +1,8 @@
-"""Initial schema creation
+"""Initial schema with precise numeric balances
 
-Revision ID: 0851f57a2649
+Revision ID: 958d5549c6c2
 Revises: 
-Create Date: 2026-05-04 01:49:51.916892
+Create Date: 2026-05-04 15:24:26.575348
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0851f57a2649'
+revision: str = '958d5549c6c2'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,6 +26,7 @@ def upgrade() -> None:
     sa.Column('username', sa.String(), nullable=False),
     sa.Column('password_hash', sa.String(), nullable=False),
     sa.Column('role', sa.String(), nullable=False),
+    sa.Column('balance', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -33,7 +34,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('records',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('amount', sa.Float(), nullable=False),
+    sa.Column('amount', sa.Numeric(precision=12, scale=2), nullable=False),
     sa.Column('record_type', sa.String(), nullable=False),
     sa.Column('category', sa.String(), nullable=False),
     sa.Column('date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),

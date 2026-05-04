@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, PositiveFloat
 from typing import List, Dict, Optional, Literal
 from datetime import datetime
-
+from decimal import Decimal
 #===========================#
 # Building the User Schemas #
 #===========================#
@@ -25,7 +25,7 @@ class UserResponse(BaseModel):
 #==============================#
 
 class RecordCreate(BaseModel):
-    amount: float = Field(..., gt=0, description="Amount must strictly be positive!")
+    amount: Decimal = Field(..., gt=0, description="Amount must strictly be positive!")
     record_type: Literal["income", "expense"] = Field(..., description="Strictly 'income' or 'expense'")
     category: str = Field(..., min_length=2)
     notes: Optional[str] = None
@@ -36,6 +36,11 @@ class RecordResponse(RecordCreate):
     user_id: int
 
     model_config = {"from_attributes": True}
+
+class TransferRequest(BaseModel):
+    sender_id: int
+    receiver_id: int
+    amount: Decimal = Field(gt=0, description="Amount must be strictly positive!")
 
 #========================================#
 # Building the Analytics Payload Schemas #

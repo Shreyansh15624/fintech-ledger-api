@@ -4,6 +4,7 @@ from typing import List, Optional
 from app import models, schemas
 from app.database import get_db
 from app.security.dependencies import RoleChecker
+from app.services import record_service
 
 router = APIRouter()
 
@@ -119,3 +120,16 @@ def delete_record(
     
     record_query.delete(synchronize_session=False)
     db.commit()
+
+# 5. FUND TRANSFER (Pessimistic Locking Implementation)
+@router.post("/transfer", status_code=status.HTTP_200_OK)
+def initiate_transfer(
+    payload: schemas.TransferRequest,
+    db: Session = Depends(get_db),
+    # Ensuring that only the authenticated roles can trigger transfer
+    current_user: models.User = Depends(RoleChecker({"Admin", "User", "Analyst"}))
+):
+    """
+    Executes a high concurrency fund transfer between two users using Pessimistic Row Locking.
+    """
+    return record_service.execute_transfer(db=db, transfer=payload)
