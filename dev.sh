@@ -70,7 +70,7 @@ case "$1" in
         check_env
         echo -e "${YELLOW}Preparing Isolated Test Environment...${NC}"
         # Explicitly calling 'ledger_redis' alongside the 'test_db' so the tests don't crash
-        sudo docker compose --env-file .env up -d test_db
+        sudo docker compose --env-file .env up -d test_db ledger_redis
 
         wait_for_postgres
 

@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from app import models
 from app.database import engine
 from app.routers import auth, records, analytics, users
+from app.middleware.idempotency import IdempotencyMiddleware
 
-
-# 2. Documentation: Defining the new Documentation Metadata for our Tags
+# 1. Documentation: Defining the new Documentation Metadata for our Tags
 tags_metadata = [
     {
         "name": "Authentication",
@@ -24,13 +24,16 @@ tags_metadata = [
     },
 ]
 
-# 3. The Engine: Initializing the FastAPI Application
+# 2. The Engine: Initializing the FastAPI Application
 app = FastAPI(
     title="Fintech Ledger API",
     description="A simple concurrent Fintech Records Manager with PostgreSQL",
-    version="1.1.0",
+    version="1.2.0",
     openapi_tags=tags_metadata,
 )
+
+# 3. Ataching the Shield to the Application Stack!
+app.add_middleware(IdempotencyMiddleware)
 
 # 4. Plugging the Routers into the Application
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])

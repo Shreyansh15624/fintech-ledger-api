@@ -123,15 +123,15 @@ def test_pessimistic_lock_prevents_double_spend(customer_client, test_db, test_c
     payload_1 = {"sender_id": sender_id, "receiver_id": receiver_id, "amount": 400.00}
     payload_2 = {"sender_id": sender_id, "receiver_id": receiver_id, "amount": 300.00}
 
-    # Helper function to fire the authenticated request
-    def fire_transfer(payload):
-        # Authorized client automatically injects the Bearer token
-        return customer_client.post("/api/v1/records/transfer", json=payload)
-    
+    # Helper function to fire the authenticated request with the requried ThreadPoolExecutor Header
+    def fire_transfer(payload, idempotency_key):
+        headers = {"Idempotency-Key": idempotency_key}
+        return customer_client.post("/api/v1/records/transfer", json=payload, headers=headers)
+
     # 3. THE STRESS TEST: Firing both the requests at the exact smae millisecond!
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(fire_transfer, payload_1)
-        future2 = executor.submit(fire_transfer, payload_2)
+        future1 = executor.submit(fire_transfer, payload_1, "stress-key-1")
+        future2 = executor.submit(fire_transfer, payload_2, "stress-key-2")
 
         response1 = future1.result()
         response2 = future2.result()
@@ -152,3 +152,36 @@ def test_pessimistic_lock_prevents_double_spend(customer_client, test_db, test_c
 
     # The sender's balance must be exactly $100 or $200 depending on which request won
     assert float(test_customer.balance) in {100.00, 200.00}
+
+def test_idempotency_middleware_caches_duplicate_requests(customer_client, test_db, test_customer):
+    """
+    This proves that if a network glitch causes a client to send the exact same transfer
+    request twice, the Redis Middleware intercepts it and prevents a double deduction.
+    """
+    # 1. SETUP: Giving the customer $500.00
+    receiver = models.Customer(username="idem_receiver", password_hash="dummyhash", balance=0.00)
+    test_db.add(receiver)
+    test_db.commit()
+    test_db.refresh(test_customer)
+
+    payload = {"sender_id": test_customer.id, "receiver_id": receiver.id, "amount": 100.00}
+
+    # This is the smart key that will trigger the cache block
+    headers = {"Idempotency-Key": "idem-key-999"}
+
+    # 2. CACHE MISS: The first request should pass through and hit the database
+    response_1 = customer_client.post("/api/v1/records/transfer", json=payload, headers=headers)
+    assert response_1.status_code == 200
+
+    test_db.refresh(test_customer)
+    assert float(test_customer.balance) == 400.00 # because 100.00 is deducted
+
+    # 3. CACHE HIT: The exact same request is sent again, simulating an app retrying
+    response_2 = customer_client.post("/api/v1/records/transfer", json=payload, headers=headers)
+
+    # The middleware should return a 200 OK (the cached success response)
+    assert response_2.status_code == 200
+
+    test_db.refresh(test_customer)
+    assert float(test_customer.balance) == 400.00
+    # because the sheild is meant to ward off the 2nd attempt
