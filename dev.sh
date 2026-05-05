@@ -45,7 +45,7 @@ case "$1" in
     up)
         check_env
         echo -e "${GREEN}Spinnig up the database infrastructure...${NC}"
-        sudo docker compose --env-file .env up -d db
+        sudo docker compose --env-file .env up -d db ledger_redis
 
         wait_for_postgres
 
@@ -56,6 +56,7 @@ case "$1" in
     migration)
         check_env
         echo -e "${YELLOW}Booting Primary Database for migration...${NC}"
+        # By not specifying the service here, docker boots everything within the YAML
         sudo docker compose --env-file .env up -d
 
         wait_for_postgres
@@ -68,6 +69,7 @@ case "$1" in
     test)
         check_env
         echo -e "${YELLOW}Preparing Isolated Test Environment...${NC}"
+        # Explicitly calling 'ledger_redis' alongside the 'test_db' so the tests don't crash
         sudo docker compose --env-file .env up -d test_db
 
         wait_for_postgres
@@ -82,6 +84,7 @@ case "$1" in
     
     down)
         echo -e "${YELLOW}Spinning down all database infrastructure...${NC}"
+        # This command tears down evey container that's currently running 
         sudo docker compose --env-file .env down
         echo -e "${GREEN}All background processes stopped. Memory freed.${NC}"
         ;;

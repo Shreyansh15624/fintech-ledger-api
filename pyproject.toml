@@ -15,6 +15,7 @@ dependencies = [
     "pytest>=9.0.2",
     "python-dotenv>=1.2.2",
     "python-multipart>=0.0.22",
+    "redis[asyncio]>=7.4.0",
     "sqlalchemy>=2.0.48",
     "uvicorn[standard]>=0.42.0",
 ]
