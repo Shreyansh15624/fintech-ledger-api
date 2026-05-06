@@ -15,7 +15,12 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 if not SQLALCHEMY_DATABASE_URL:
     raise ValueError("⚠️CRITICAL: DATABASE_URL Environment Variable is Missing!")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30.0,
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
