@@ -53,7 +53,7 @@ case "$1" in
         uv run uvicorn app.main:app --reload
         ;;
 
-    migration)
+    migrate)
         check_env
         echo -e "${YELLOW}Booting Primary Database for migration...${NC}"
         # By not specifying the service here, docker boots everything within the YAML
