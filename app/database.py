@@ -9,7 +9,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 2. Fetching the secure URL dynamically
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+db_user = os.getenv("POSTGRES_USER")
+db_pass = os.getenv("POSTGRES_PASSWORD")
+db_name = os.getenv("POSTGRES_DB")
+
+# If DATABASE_URL isn't set, then we default to the localhost for the local development outside of Docker 
+db_host = os.getenv("POSTGRES_HOST", "127.0.0.1")
+
+SQLALCHEMY_DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}:5432/{db_name}"
 
 # A failsafe to prevent the app from booting at all if the '.env' file is missing
 if not SQLALCHEMY_DATABASE_URL:

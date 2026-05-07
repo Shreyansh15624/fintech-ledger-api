@@ -17,10 +17,11 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  up          Start the Docker databases and launch the FastAPI server"
+    echo "  worker      Start the Celery background worker to process transfers"
+    echo "  migrate     Apply any pending Alembic schema updates"
     echo "  test        Start the Docker databases and run the Pytest suite and teardown"
     echo "  down        Safely stop and remove all the background Docker containers"
     echo "  help        Display this menu"
-    echo "  migrate     Apply any pending Alembic schema updates"
 }
 
 check_env(){
@@ -52,6 +53,11 @@ case "$1" in
         echo -e "${GREEN}Launching Uvicorn server...${NC}"
         uv run uvicorn app.main:app --reload
         ;;
+    worker)
+        check_env
+        echo -e "${YELLOW}Booting the Celery Background Worker...${NC}"
+        uv run celery -A app.worker.celery_app worker --loglevel=info
+        ;;
 
     migrate)
         check_env
@@ -82,6 +88,12 @@ case "$1" in
         echo -e "${GREEN}Test cycle complete. Infrastructure spun down safely.${NC}"
         ;;
     
+    stress)
+        echo -e "${YELLOW}Deploying the Locust Swarm Testing Dashboard...${NC}"
+        ehco -e "${YELLOW}Open https://localhost:8089 in your browser after launch.${NC}"
+        uv run locust -f load_tests/locustfile.py
+        ;;
+
     down)
         echo -e "${YELLOW}Spinning down all database infrastructure...${NC}"
         # This command tears down evey container that's currently running 

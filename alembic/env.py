@@ -11,22 +11,15 @@ from dotenv import load_dotenv
 # Opening the local vault to get credentials
 load_dotenv()
 
-# IMporting the database Base and models so that Alembic can read the schema
-from app.database import Base
+# Importing the Base & the perfectly formatted Database URL
+from app.database import Base, SQLALCHEMY_DATABASE_URL
 import app.models
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Its the ALembic Config Object, it provides access to the values within the .ini files in use
 config = context.config
 
-# Dynamically building the connection string so the secrets aren't hardcoded
-db_user = os.getenv("POSTGRES_USER")
-db_pass = os.getenv("POSTGRES_PASSWORD")
-db_name = os.getenv("POSTGRES_DB")
-secure_url = f"postgresql://{db_user}:{db_pass}@127.0.0.1:5432/{db_name}"
-
-# Overwriting the defualt sqlalchemy.url in alembic.ini
-config.set_main_option("sqlalchemy.url", secure_url)
+# Overwriting the default sqlalchemy.url in alembic.ini with your dunamic URL
+config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

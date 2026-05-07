@@ -1,3 +1,4 @@
+from app.tasks import process_transfer_task
 from app.security.dependencies import get_current_customer
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -122,15 +123,27 @@ def delete_record(
     record_query.delete(synchronize_session=False)
     db.commit()
 
-# 5. FUND TRANSFER (Pessimistic Locking Implementation)
-@router.post("/transfer", status_code=status.HTTP_200_OK)
+# 5. FUND TRANSFER (Asynchronous Celery Implementation)
+@router.post("/transfer", status_code=status.HTTP_202_ACCEPTED)
 def initiate_transfer(
     payload: schemas.TransformRequest,
-    db: Session = Depends(get_db),
+
     # Ensuring that only the authenticated roles can trigger transfer
     current_customer: models.Customer = Depends(get_current_customer)
 ):
     """
-    Executes a high concurrency fund transfer between two users using Pessimistic Row Locking.
+    Instantly accepts the transfer request and queues it for the Celery worker to process.
     """
-    return record_service.execute_transfer(db=db, transfer=payload)
+    # 1. Dropping the ticket for the Redis Broker to catch and queue using '.delay()'
+    task = process_transfer_task.delay(
+        sender_id=payload.sender_id,
+        receiver_id=payload.receiver_id,
+        amount=payload.amount,
+        category="Transfer", # Creating a default Category since Locust doesn't specify one
+    )
+
+    # 2. Instantly receive a receipt to the User
+    return {
+        "message": "Transfer request is accepted and is processing in the background.",
+        "task_id": task.id,
+    }

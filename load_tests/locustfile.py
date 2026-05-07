@@ -10,10 +10,10 @@ class FinTechStressTest(HttpUser):
         Phase-A: The Boot up
         Every virtual user must login to get a JET Token before attacking.
         """
-        # Note: We will assume a user named 'load_tester' with a password 'testpass' exists in the DB
+        # Note: We will assume a user named 'load_tester' with a password 'password' exists in the DB
         login_response = self.client.post(
             "/api/v1/auth/customer/login",
-            data={"username": "load_tester", "password": "testpass"},
+            data={"username": "load_tester", "password": "password"},
         )
 
         if login_response.status_code == 200:

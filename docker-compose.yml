@@ -1,9 +1,7 @@
 services:
-  # The Primary Database!
-  db:
-    image: postgres:15-alpine
-    container_name: ledger_postgres
-    restart: always
+  # The Primary Database
+  ledger_postgres:
+    image: postgres:15
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -11,29 +9,60 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-  
-  # Dedicated Testing Database
-  test_db:
-    image: postgres:15-alpine
-    container_name: ledger_postgres_test
-    # Not using a Volume in here to maintain Blazing Fast Speeds
-    environment:
-      POSTGRES_USER: ledger_admin
-      POSTGRES_PASSWORD: abc123
-      POSTGRES_DB: fintech_ledger_test
-    ports:
-    - "5433:5432"
-  
+      - pg_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # The Message Broker & Cache
   ledger_redis:
     image: redis:7-alpine
     container_name: ledger_redis
     ports:
       - "6379:6379"
-    command: redis-server --save 60 1 --loglevel warning
-    networks:
-      - default
   
-networks:
-  default:
-    driver: bridge
+  # The FastAPI Web Server
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://ledger_redis:6379/0
+      - POSTGRES_HOST=ledger_postgres
+    depends_on:
+      ledger_postgres:
+        condition: service_healthy
+      ledger_redis:
+        condition: service_started
+
+  # The Celery Background Worker
+  worker:
+    build: .
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://ledger_redis:6379/0
+      - POSTGRES_HOST=ledger_postgres
+    depends_on:
+      ledger_redis:
+        condition: service_started
+      ledger_postgres:
+        condition: service_healthy
+  
+  # The Locust Stress Testing Swarm
+  locust:
+    build: .
+    command: locust -f load_tests/locustfile.py --host http://api:8000
+    ports:
+      - "8089:8089"
+    depends_on:
+      - api
+
+volumes:
+  pg_data:
