@@ -15,7 +15,7 @@ It features a strict `customers` and `employees` domain schema, Role-Based Acces
 
 <br>
     <p align="center">
-        <img src="./architecture.jpg" alt="Project Architecture Overview" width="85%">
+        <img src="architecture.jpg" alt="Project Architecture Overview">
     </p>
 <br>
 
