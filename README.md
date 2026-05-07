@@ -1,4 +1,4 @@
-# LedgerCore: A Distributed FinTech Engine
+# Mutex Mint: A Distributed FinTech Engine
 
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi)
@@ -9,7 +9,7 @@
 
 ## Description
 
-LedgerCore is a highly concurrent, fully containerized financial backend engineered to process thousands of secure transactions without race conditions or data loss. Built with FastAPI, PostgreSQL, Redis, and Celery, this project strictly separates the API gateway from background processing to ensure maximum availability.
+Mutex Mint is a highly concurrent, fully containerized financial backend engineered to process thousands of secure transactions without race conditions or data loss. Built with FastAPI, PostgreSQL, Redis, and Celery, this project strictly separates the API gateway from background processing to ensure maximum availability.
 
 It features a strict `customers` and `employees` domain schema, Role-Based Access Control (RBAC), and custom idempotency middleware. In recent benchmarks, the distributed engine successfully processed a 500-user concurrent stress test via Locust, achieving a 0.0% failure rate while mitigating heavy database lock contention.
 
